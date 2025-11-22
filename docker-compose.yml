@@ -1,0 +1,71 @@
+services:
+  weaviate:
+    image: cr.weaviate.io/semitechnologies/weaviate:1.34.0
+    command:
+      - --host
+      - 0.0.0.0
+      - --port
+      - '8080'
+      - --scheme
+      - http
+    ports:
+      - "8080:8080"
+      - "50051:50051"
+    restart: on-failure
+    volumes:
+      - weaviate_data:/var/lib/weaviate
+
+    environment:
+      QUERY_DEFAULTS_LIMIT: 25
+      PERSISTENCE_DATA_PATH: /var/lib/weaviate
+      CLUSTER_HOSTNAME: 'node1'
+      AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: false
+      AUTHENTICATION_APIKEY_ENABLED: true
+      AUTHENTICATION_APIKEY_ALLOWED_KEYS: "14136188d74a5a7904bdaefskdlncla,jkjsdkldfjksa764110301f012e9skaj"
+      AUTHENTICATION_APIKEY_USERS: "root,user"
+
+      AUTHORIZATION_ENABLE_RBAC: true
+      AUTHORIZATION_RBAC_ROOT_USERS: "root"
+
+      ENABLE_MODULES: >
+        text2vec-cohere,text2vec-huggingface,text2vec-openai,
+        text2vec-google,text2vec-transformers,generative-openai,
+        generative-cohere,generative-google,generative-anthropic,
+        generative-ollama
+
+      TRANSFORMERS_INFERENCE_API: http://text2vec-transformers:8080
+      OLLAMA_BASE_URL: http://ollama:11434
+
+      # Correct API key variables
+      OPENAI_APIKEY: your-openai-key
+      COHERE_APIKEY: your-cohere-key
+      HUGGINGFACE_APIKEY: your-hf-key
+      TEXT2VEC_GOOGLE_APIKEY: your-google-key
+      GENERATIVE_ANTHROPIC_APIKEY: your-anthropic-key
+
+    networks:
+      - weaviate-search-net
+
+  text2vec-transformers:
+    image: cr.weaviate.io/semitechnologies/transformers-inference:sentence-transformers-multi-qa-MiniLM-L6-cos-v1
+    environment:
+      ENABLE_CUDA: 0
+    networks:
+      - weaviate-search-net
+
+  ollama:
+    image: ollama/ollama:latest
+    volumes:
+      - ollama_data:/root/.ollama
+    ports:
+      - "11434:11434"
+    networks:
+      - weaviate-search-net
+
+volumes:
+  weaviate_data:
+  ollama_data:
+
+networks:
+  weaviate-search-net:
+    external: true
